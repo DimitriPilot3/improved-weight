@@ -56,7 +56,12 @@ if ( SERVER ) then
 		ent.ImprovedWeight = {
 			Original = mass,
 			Modified = mass,
+			Original_OtherPhysBones = {}
 		}
+		
+		for i = 1, ent:GetPhysicsObjectCount() - 1 do
+			ent.ImprovedWeight.Original_OtherPhysBones[i] = ent:GetPhysicsObjectNum(i):GetMass()
+		end
 		
 		ent:SetNWFloat( "OriginalWeight", mass )
 		ent:SetNWFloat( "ModifiedWeight", mass )
@@ -144,6 +149,17 @@ if ( SERVER ) then
 		
 		local phys = ent:GetPhysicsObject()
 		phys:SetMass( data.Mass )
+
+		-- Also set the weight of other physics objects (if any) attached to entities such as ragdolls.
+		for i = 1, ent:GetPhysicsObjectCount() - 1 do
+			phys = ent:GetPhysicsObjectNum(i)
+			if ( IsValid( phys ) ) then
+				local mass = data.Mass * ent.ImprovedWeight.Original_OtherPhysBones[i] / ent.ImprovedWeight.Original
+				phys:SetMass( math.Clamp( mass, 0.1, 50000 ) )
+
+				-- print("Bone", i, "Mass", mass)
+			end
+		end
 		duplicator.StoreEntityModifier( ent, "mass", data )
 	end
 	duplicator.RegisterEntityModifier( "mass", SetMass )
